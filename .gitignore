@@ -9,6 +9,9 @@ __pycache__
 .cdk.staging
 cdk.out
 
+# Cached info that doesn't need to be public
+/cdk.context.json
+
 # PyCharm Config
 .idea/
 
