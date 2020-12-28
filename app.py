@@ -5,8 +5,8 @@ from deadnets.deadnets_stack import DeadnetsStack
 import os
 
 ENV = core.Environment(
-    account=os.environ['CDK_DEFAULT_ACCOUNT'],
-    region=os.environ['CDK_DEFAULT_REGION']
+    account=os.environ.get('CDK_DEFAULT_ACCOUNT'),
+    region=os.environ.get('CDK_DEFAULT_REGION')
 )
 
 

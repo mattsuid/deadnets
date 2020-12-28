@@ -6,4 +6,4 @@ install:
   - npm install -g aws-cdk
   - pip install -r requirements.txt
 script:
-  - python -m unittest tests/*
+  - coverage run -m unittest discover
