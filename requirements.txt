@@ -36,7 +36,8 @@ aws-cdk.cx-api==1.80.0
 aws-cdk.region-info==1.80.0
 cattrs==1.1.2
 constructs==3.2.80
--e git+https://github.com/mattsuid/deadnets.git@a8f4b62ca53f53420373c38cec30fa0d2a38438a#egg=deadnets
+coverage==5.3.1
+-e git+https://github.com/mattsuid/deadnets.git@c29da0b75efcb65b103e68b1cdff427387ccc96a#egg=deadnets
 jsii==1.16.0
 publication==0.0.3
 python-dateutil==2.8.1
