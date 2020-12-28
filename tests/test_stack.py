@@ -1,6 +1,6 @@
 import unittest
-import os
 from app import app
+from aws_cdk.core import App
 
 
 class TestEnvironmentVariables(unittest.TestCase):
@@ -11,6 +11,5 @@ class TestEnvironmentVariables(unittest.TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_stack_env(self):
-        self.assertEqual(app.account, os.environ.get('CDK_DEFAULT_ACCOUNT'))
-        self.assertEqual(app.region, os.environ.get('CDK_DEFAULT_REGION'))
+    def test_stack_instantiates(self):
+        self.assertIsInstance(app, App)
