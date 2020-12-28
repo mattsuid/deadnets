@@ -11,3 +11,4 @@ script:
   - coverage run --source="app,deadnets,tests" -m unittest discover
 after_success:
   - coveralls
+  - cdk deploy
