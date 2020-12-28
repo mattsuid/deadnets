@@ -3,6 +3,8 @@ from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_s3_deployment as s3_deployment
 from aws_cdk import aws_route53 as route53
 from aws_cdk import aws_route53_targets as route_53_targets
+from aws_cdk import aws_cloudfront as cloudfront
+from aws_cdk import aws_certificatemanager as acm
 from pathlib import Path
 
 
@@ -28,10 +30,37 @@ class DeadnetsStack(core.Stack):
             destination_bucket=web_bucket
         )
 
+        dns_zone = route53.HostedZone.from_lookup(self, 'web_dns_zone', domain_name='deadnets.io')
+
+        acm_certificate = acm.Certificate(
+            self,
+            'web_certificate',
+            domain_name='deadnets.io',
+            validation=acm.CertificateValidation.from_dns(dns_zone)
+        )
+
+        cloudfront_distribution = cloudfront.CloudFrontWebDistribution(
+            self,
+            'web_cloudfront',
+            origin_configs=[
+                cloudfront.SourceConfiguration(
+                    behaviors=[
+                        cloudfront.Behavior()
+                    ],
+                    s3_origin_source=cloudfront.S3OriginConfig(
+                        s3_bucket_source=web_bucket
+                    )
+                )
+            ],
+            viewer_certificate=cloudfront.ViewerCertificate().from_acm_certificate(acm_certificate)
+        )
+
         dns_record = route53.ARecord(
             self,
             'web_dns_record',
-            zone=route53.HostedZone.from_lookup(self, 'web_dns_zone', domain_name='deadnets.io'),
+            zone=dns_zone,
             record_name='deadnets.io',
-            target=route53.RecordTarget.from_alias(route_53_targets.BucketWebsiteTarget(web_bucket))
+            target=route53.RecordTarget.from_alias(
+                alias_target=route53.IAliasRecordTarget(cloudfront_distribution)
+            )
         )
