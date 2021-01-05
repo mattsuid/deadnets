@@ -2,7 +2,6 @@ from aws_cdk import core
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_s3_deployment as s3_deployment
 from aws_cdk import aws_route53 as route53
-from aws_cdk import aws_route53_targets as route_53_targets
 from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_certificatemanager as acm
 from pathlib import Path
@@ -39,6 +38,8 @@ class DeadnetsStack(core.Stack):
             validation=acm.CertificateValidation.from_dns(dns_zone)
         )
 
+        viewer_certificate = cloudfront.ViewerCertificate().from_acm_certificate(certificate=acm_certificate)
+
         cloudfront_distribution = cloudfront.CloudFrontWebDistribution(
             self,
             'web_cloudfront',
@@ -52,7 +53,7 @@ class DeadnetsStack(core.Stack):
                     )
                 )
             ],
-            viewer_certificate=cloudfront.ViewerCertificate().from_acm_certificate(acm_certificate)
+            viewer_certificate=viewer_certificate
         )
 
         dns_record = route53.ARecord(
