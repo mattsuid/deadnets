@@ -35,10 +35,16 @@ class DeadnetsStack(core.Stack):
             self,
             'web_certificate',
             domain_name='deadnets.io',
+            subject_alternative_names=['deadnets.io', 'www.deadnets.io'],
             validation=acm.CertificateValidation.from_dns(dns_zone)
         )
 
-        viewer_certificate = cloudfront.ViewerCertificate().from_acm_certificate(certificate=acm_certificate)
+        viewer_certificate = cloudfront.ViewerCertificate().from_acm_certificate(
+            certificate=acm_certificate,
+            aliases=['deadnets.io', 'www.deadnets.io'],
+            security_policy=cloudfront.SecurityPolicyProtocol.TLS_V1,
+            ssl_method=cloudfront.SSLMethod.SNI
+        )
 
         cloudfront_distribution = cloudfront.CloudFrontWebDistribution(
             self,
