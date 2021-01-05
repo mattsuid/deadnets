@@ -2,6 +2,7 @@ from aws_cdk import core
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_s3_deployment as s3_deployment
 from aws_cdk import aws_route53 as route53
+from aws_cdk import aws_route53_targets as route53_targets
 from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_certificatemanager as acm
 from pathlib import Path
@@ -16,11 +17,17 @@ class DeadnetsStack(core.Stack):
             self,
             'web_bucket',
             versioned=False,
-            public_read_access=True,
             bucket_name='deadnets.io',
-            website_index_document='index.html',
             removal_policy=core.RemovalPolicy.DESTROY
         )
+
+        origin_access_identity = cloudfront.OriginAccessIdentity(
+            self,
+            'origin_access_identity',
+            comment='CloudFront read access'
+        )
+
+        web_bucket.grant_read(origin_access_identity)
 
         web_assets = s3_deployment.BucketDeployment(
             self,
@@ -31,43 +38,49 @@ class DeadnetsStack(core.Stack):
 
         dns_zone = route53.HostedZone.from_lookup(self, 'web_dns_zone', domain_name='deadnets.io')
 
-        acm_certificate = acm.Certificate(
+        acm_certificate = acm.DnsValidatedCertificate(
             self,
             'web_certificate',
+            hosted_zone=dns_zone,
             domain_name='deadnets.io',
-            subject_alternative_names=['deadnets.io', 'www.deadnets.io'],
-            validation=acm.CertificateValidation.from_dns(dns_zone)
-        )
-
-        viewer_certificate = cloudfront.ViewerCertificate().from_acm_certificate(
-            certificate=acm_certificate,
-            aliases=['deadnets.io', 'www.deadnets.io'],
-            security_policy=cloudfront.SecurityPolicyProtocol.TLS_V1,
-            ssl_method=cloudfront.SSLMethod.SNI
+            subject_alternative_names=['deadnets.io', 'www.deadnets.io']
         )
 
         cloudfront_distribution = cloudfront.CloudFrontWebDistribution(
             self,
-            'web_cloudfront',
+            'web_cloudfront_distribution',
             origin_configs=[
                 cloudfront.SourceConfiguration(
-                    behaviors=[
-                        cloudfront.Behavior()
-                    ],
                     s3_origin_source=cloudfront.S3OriginConfig(
-                        s3_bucket_source=web_bucket
-                    )
+                        s3_bucket_source=web_bucket,
+                        origin_access_identity=origin_access_identity
+                    ),
+                    behaviors=[
+                        cloudfront.Behavior(
+                            is_default_behavior=True
+                        )
+                    ],
                 )
             ],
-            viewer_certificate=viewer_certificate
+            error_configurations=[
+                cloudfront.CfnDistribution.CustomErrorResponseProperty(
+                    error_code=404,
+                    response_code=404,
+                    response_page_path="/404.html"
+                )
+            ],
+            viewer_certificate=cloudfront.ViewerCertificate.from_acm_certificate(
+                certificate=acm_certificate,
+                aliases=['deadnets.io']
+            )
         )
 
         dns_record = route53.ARecord(
             self,
-            'web_dns_record',
+            'DNSAliasForCloudFront',
             zone=dns_zone,
-            record_name='deadnets.io',
             target=route53.RecordTarget.from_alias(
-                alias_target=route53.IAliasRecordTarget(cloudfront_distribution)
-            )
+                route53_targets.CloudFrontTarget(cloudfront_distribution)
+            ),
+            record_name='deadnets.io',
         )
